@@ -1,12 +1,12 @@
 from numpy import *
 from scipy import *
 from scipy.io import wavfile
-#import pylab
+import pylab
 
 def make_stereo(filename, sig_l, sig_r, fs=44100):
     sig = array([sig_l, sig_r]).T
     sig = sig / sig.max()
-    wavfile.write(filename, fs, (5000*sig).astype(int16))
+    wavfile.write(filename, fs, (15000*sig).astype(int16))
 
 def read_impulse(elev, azimuth, N=128):
     """ Accepts elev and azimuth in degrees, and returns closest impulse response and transfer function to that combination from compact KEMAR HRTF measurements"""
@@ -117,6 +117,8 @@ def path(t_sig, start, end, duration=0, window_size=1024, fs=44100):
 
     #window = hamming_window(N)(r_[:window_size])
     window = hamming(N)#(r_[:window_size])
+    #window = cut_gaussian(N) # TODO
+    #window = sinc_times_gaussian(N) # TODO
 
     i = 1
     elev = start[0]
@@ -160,12 +162,15 @@ fs, t_diner = wavfile.read('wav/sa1.wav')
 fs, t_diner2 = wavfile.read('wav/sa2.wav')
 print "original framerate (in Hz)", fs
 
-t_diner_l, t_diner_r = path(t_diner, (0,-70), (0, 50), 0, fs/10., fs)
-t_diner_l2, t_diner_r2 = path(t_diner2, (0,50), (0, 50), 0, fs/10., fs)
+t_diner_l, t_diner_r = path(t_diner, (0, -70), (0, 70), 0, fs/10., fs)
+t_diner_l2, t_diner_r2 = path(t_diner2, (0,70), (0, -70), 0, fs/10., fs)
 
-final_l = t_diner_l * 3 # TODO longest of the two
+final_l = t_diner_l # TODO longest of the two
 final_l[:len(t_diner_l2)] += t_diner_l2
 final_r = t_diner_r
 final_r[:len(t_diner_r2)] += t_diner_r2
 make_stereo('wav/360_headphone.wav', final_l, final_r, fs)
+pylab.plot(final_l)
+pylab.plot(final_r)
+pylab.savefig("test.png")
 
